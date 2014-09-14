@@ -1,10 +1,11 @@
-Provide lifecycle events for elements:
+Polyfill-like lib providing lifecycle events for HTML elements:
 
-* enteredView
-* leftView
-* attached
-* detached
-* attributeChanged
+* `enteredView`
+* `leftView`
+* `attached`
+* `detached`
+* `attributeChanged`
+
 
 ## Use
 

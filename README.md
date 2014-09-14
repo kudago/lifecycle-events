@@ -20,11 +20,11 @@ var lifecycle = require('lifecycle-events');
 
 
 //Enable lifecycle events for all elements matching the selector
-lifecycle.on('*');
+lifecycle('*');
 
 
 //Enable lifecycle events for the Node/NodeList passed
-lifecycle.on(element);
+lifecycle(element);
 element.addEventListener('enteredView', function(){
 	//...
 });
@@ -34,7 +34,7 @@ element.addEventListener('attached', function(){
 
 
 //Pass custom options
-lifecycle.on('.item', {
+lifecycle('.item', {
 	mutations: false,
 	viewport: true,
 	container: document.querySelector('.container')
@@ -48,9 +48,6 @@ lifecycle.off('*');
 //Disable all lifecycle events
 lifecycle.off();
 ```
-
-
-## Options
 
 
 ## Options

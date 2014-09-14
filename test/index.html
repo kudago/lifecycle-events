@@ -1,0 +1,87 @@
+<!doctype html>
+
+
+<script src="../node_modules/require-stub/index.js"></script>
+<script src="../node_modules/mutypes/index.js"></script>
+<script src="../node_modules/muevents/index.js"></script>
+<script src="../node_modules/mumath/index.js"></script>
+<script src="../node_modules/matches-selector/index.js"></script>
+<script src="../node_modules/extend/index.js"></script>
+<script src="../node_modules/intersects/index.js"></script>
+<script src="../node_modules/selector-observer/lib/index.js"></script>
+
+<script src="../index.js" data-module-name="lifecycle-events"></script>
+
+
+<style>
+	body{
+		padding: 20px;
+	}
+	.target{
+		display: block;
+		width: 200px;
+		height: 300px;
+		float: left;
+		background: white;
+		transition: 1s ease-in background;
+		border: 2px solid black;
+		margin: 0 20px 20px 0;
+	}
+
+	.target:nth-child(odd){
+		height: 400px;
+	}
+	.target:nth-child(even){
+		float: right;
+	}
+
+	.target.entered{
+		background: gray;
+	}
+</style>
+
+
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+<div class="target"></div>
+
+
+<script>
+	var lc = require('lifecycle-events');
+
+	var els = document.querySelectorAll('.target');
+	lc(els);
+
+	document.addEventListener('enteredView', function(e){
+		e.target.classList.add('entered');
+	});
+
+	document.addEventListener('leftView', function(e){
+		e.target.classList.remove('entered');
+	});
+</script>

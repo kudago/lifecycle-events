@@ -11,7 +11,8 @@
     "matches-selector": "~1.0.0",
     "require-stub": "*",
     "intersects": "*",
-    "mumath": "*"
+    "mumath": "*",
+    "tiny-element": "~0.1.4"
   },
   "devDependencies": {},
   "scripts": {

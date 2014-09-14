@@ -9,7 +9,10 @@
 <script src="../node_modules/extend/index.js"></script>
 <script src="../node_modules/intersects/index.js"></script>
 <script src="../node_modules/selector-observer/lib/index.js"></script>
+<script src="../node_modules/tiny-element/index.js"></script>
 
+<script src="../viewport.js"></script>
+<script src="../mutations.js"></script>
 <script src="../index.js" data-module-name="lifecycle-events"></script>
 
 
@@ -74,9 +77,6 @@
 <script>
 	var lc = require('lifecycle-events');
 
-	var els = document.querySelectorAll('.target');
-	lc(els);
-
 	document.addEventListener('enteredView', function(e){
 		e.target.classList.add('entered');
 	});
@@ -84,4 +84,8 @@
 	document.addEventListener('leftView', function(e){
 		e.target.classList.remove('entered');
 	});
+
+	var els = document.querySelectorAll('.target');
+	lc(els);
+
 </script>

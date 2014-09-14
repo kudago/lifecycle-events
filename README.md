@@ -16,25 +16,32 @@ Code:
 var lifecycle = require('lifecycle-events');
 
 //Enable lifecycle events for all elements matching the selector
-lifecycle('*');
+lifecycle.enable('*');
 
 //Enable lifecycle events for the Node/NodeList passed
-lifecycle(element);
+lifecycle.enable(element);
 element.addEventListener('enteredView', function(){});
 element.addEventListener('attached', function(){});
 
 //Pass custom options
-lifecycle('.item', {
+lifecycle.enable('.item', {
 	mutations: false,
 	viewport: true,
 	container: document.querySelector('.container')
 });
 
 //Disable lifecycle events for previously added selector
-lifecycle.off('*');
+lifecycle.disable('*');
 
 //Disable all lifecycle events
-lifecycle.off();
+lifecycle.disable();
+```
+
+Can be used sepatately:
+```js
+var vpEvents = require('lifecycle-events/viewport');
+
+vpEvents('*');
 ```
 
 

@@ -1,4 +1,4 @@
-## Lifecycle
+## Lifecycle-events
 
 Polyfill-like lib providing lifecycle events for HTML elements: `enteredView`, `leftView`, `attached`, `detached` and `attributeChanged`.
 
@@ -44,4 +44,9 @@ lifecycle.off();
 |----|:---:|:----:|---:|
 | `mutations` | _bool_ | `true` | `attached` and `detached` events |
 | `viewport` | _bool_ | `true` | `enteredView` and `leftView` events |
-| `container` | _string_&#124;_Element_ | `document` | A container to restrict selector (speed purposes) |
+| `container` | _string_ &#124; _Element_ | `document` | Container to observe mutations within (speed purposes) |
+
+
+## License
+
+MIT

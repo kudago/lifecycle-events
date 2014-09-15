@@ -1,5 +1,6 @@
 var getElements = require('tiny-element');
 var evt = require('muevents');
+var intersects = require('intersects');
 
 
 /**
@@ -22,7 +23,13 @@ var vpTargets = [];
  * Observe targets
  */
 function enableViewportEventsFor(target, options){
-	vpTargets.push(target);
+	//append target to options
+	options.query = target;
+
+	//ensure tolerance
+	options.tolerance = options.tolerance === undefined ? 0 : options.tolerance;
+
+	vpTargets.push(options);
 	checkViewport();
 }
 
@@ -62,7 +69,8 @@ evt
 /** check elements need to be entered/left */
 function checkViewport(){
 	for (var i = 0; i < vpTargets.length; i++){
-		var query = vpTargets[i];
+		var targetOptions = vpTargets[i];
+		var query = targetOptions.query;
 
 		var targets = getElements(query, true);
 
@@ -72,17 +80,17 @@ function checkViewport(){
 
 			//if item is entered - check to call entrance
 			if (enteredItemsSet.has(target)){
-				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
+				if (!intersects(targetRect, vpRect, targetOptions)) {
 					enteredItemsSet.delete(target);
-					evt.emit(target, defaults.leftViewCallbackName, null, true);
+					evt.emit(target, targetOptions.leftViewCallbackName, null, true);
 				}
 			}
 
 			//check to call leave
 			else {
-				if (intersects(targetRect, vpRect, {tolerance: 0})) {
+				if (intersects(targetRect, vpRect, targetOptions)) {
 					enteredItemsSet.add(target);
-					evt.emit(target, defaults.enteredViewCallbackName, null, true);
+					evt.emit(target, targetOptions.enteredViewCallbackName, null, true);
 				}
 			}
 		}

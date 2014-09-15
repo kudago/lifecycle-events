@@ -1,7 +1,8 @@
 <!doctype html>
 
 
-<script src="../node_modules/require-stub/index.js"></script>
+<!-- dev -->
+<!-- <script src="../node_modules/require-stub/index.js"></script>
 <script src="../node_modules/mutypes/index.js"></script>
 <script src="../node_modules/muevents/index.js"></script>
 <script src="../node_modules/mumath/index.js"></script>
@@ -13,7 +14,11 @@
 
 <script src="../viewport.js"></script>
 <script src="../mutations.js"></script>
-<script src="../index.js" data-module-name="lifecycle-events"></script>
+<script src="../index.js" data-module-name="lifecycle-events"></script> -->
+
+
+<!-- dist -->
+<script src="../dist/lifecycle.min.js"></script>
 
 
 <style>
@@ -75,7 +80,7 @@
 
 
 <script>
-	var lc = require('lifecycle-events');
+	var lc = window.lifecycle || require('lifecycle-events');
 
 	document.addEventListener('enteredView', function(e){
 		e.target.classList.add('entered');

@@ -5,16 +5,25 @@ Polyfill-like lib providing lifecycle events for HTML elements: `enteredView`, `
 
 ## Use
 
-Install:
+Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/dist/lifecycle.min.js):
+
+```html
+<script src="lifecycle.min.js"></script>
+```
+
+
+or install module (to browserify):
 
 `$ npm install lifecycle-events`
+
+```js
+var lifecycle = require('lifecycle-events');
+```
 
 
 Code:
 
 ```js
-var lifecycle = require('lifecycle-events');
-
 //Enable lifecycle events for all elements matching the selector
 lifecycle.enable('*');
 
@@ -37,11 +46,15 @@ lifecycle.disable('*');
 lifecycle.disable();
 ```
 
-Can be used sepatately:
+
+Also can be used sepatately:
 ```js
 var vpEvents = require('lifecycle-events/viewport');
 
 vpEvents('*');
+
+var mutations = require('lifecycle-events/mutations');
+mutations('.item', container);
 ```
 
 

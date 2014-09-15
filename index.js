@@ -1,5 +1,4 @@
 var extend = require('extend');
-var intersects = require('intersects');
 var viewport = require('./viewport');
 
 
@@ -8,7 +7,13 @@ var doc = document, win = window;
 
 /**
  * @module elements-lifecycle
+ *
  * @todo  Ignore native CustomElements lifecycle events
+ * @todo  Nested queryselector ten times faster than doc.querySelector:
+ *        http://jsperf.com/document-vs-element-queryselectorall-performance/2
+ * @todo  Build standalone package
+ * @todo  Multiple observations to an extent faster than one global observer:
+ *        http://jsperf.com/mutation-observer-cases
  */
 var lifecycle = module.exports = enableLifecycleEvents;
 lifecycle.enable = enableLifecycleEvents;
@@ -40,10 +45,6 @@ var defaults = {
  * @chainable
  */
 function enableLifecycleEvents(query, options){
-	//if no target passed - find target within options
-	if (type.isObject(query)) {
-		options = query;
-	}
 
 	options = extend({}, defaults, options);
 

@@ -1,7 +1,11 @@
 module.exports = enableMutationEvents;
 
 
-/** Set of mutation observers */
+/** @todo  Require polyfill */
+var MO = MutationObserver;
+
+
+/** Set of observers */
 var observers = new WeakSet;
 
 

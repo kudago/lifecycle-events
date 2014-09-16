@@ -12,6 +12,11 @@ Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/di
 ```html
 <script src="lifecycle.min.js"></script>
 <script>lifecycle('*');</script>
+
+<script>
+  $('.my-element').on('attached', function(){});
+  $('.my-other-element').on('enteredView', function(){});
+</script>
 ```
 
 
@@ -48,6 +53,18 @@ lifecycle.disable('*');
 
 //Disable all lifecycle events
 lifecycle.disable();
+```
+
+### Customize callback names
+
+By default, Polymer’s event names are used for events.
+You can redefine event names, defined in `lifecycle.defaults`:
+
+```js
+lifecycle.defaults.attachedCallbackName = 'appended';
+lifecycle.defaults.detachedCallbackName = 'removed';
+lifecycle.defaults.enteredViewCallbackName = 'appeared';
+lifecycle.defaults.leftViewCallbackName = 'disappeared';
 ```
 
 

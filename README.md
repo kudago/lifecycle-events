@@ -5,7 +5,7 @@ Polyfill-like lib enabling lifecycle events for HTML elements: `enteredView`, `l
 It is _2.1 kB_ gzipped.
 
 
-### Use as polyfill
+### A. Use as polyfill:
 
 Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/dist/lifecycle.min.js):
 
@@ -15,7 +15,7 @@ Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/di
 ```
 
 
-### Custom use
+### B. Custom use:
 
 Install browserify module:
 
@@ -53,7 +53,7 @@ lifecycle.disable();
 
 ## TODO
 
-* Optimize enabled selectors. For example, avoid extra enable if you have '*' enabled. And so on.
+* Optimize enabled selectors. For example, avoid extra enabling if you have '*' enabled. And so on.
 
 
 ## License

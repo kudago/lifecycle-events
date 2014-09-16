@@ -3,17 +3,12 @@
 
 <!-- dev -->
 <!-- <script src="../node_modules/require-stub/index.js"></script>
-<script src="../node_modules/mutypes/index.js"></script>
 <script src="../node_modules/muevents/index.js"></script>
-<script src="../node_modules/mumath/index.js"></script>
 <script src="../node_modules/matches-selector/index.js"></script>
-<script src="../node_modules/extend/index.js"></script>
 <script src="../node_modules/intersects/index.js"></script>
-<script src="../node_modules/selector-observer/lib/index.js"></script>
+<script src="../node_modules/mutation-observer/index.js"></script>
 <script src="../node_modules/tiny-element/index.js"></script>
 
-<script src="../viewport.js"></script>
-<script src="../mutations.js"></script>
 <script src="../index.js" data-module-name="lifecycle-events"></script> -->
 
 
@@ -34,6 +29,8 @@
 		transition: 1s ease-in background;
 		border: 2px solid black;
 		margin: 0 20px 20px 0;
+		text-align: center;
+		padding-top: 20px;
 	}
 
 	.target:nth-child(odd){
@@ -46,7 +43,16 @@
 	.target.entered{
 		background: gray;
 	}
+
+	.add{
+		position: fixed;
+		top: 10px;
+		right: 10px;
+	}
 </style>
+
+
+<button class="add">Add 10 items</button>
 
 
 <div class="target"></div>
@@ -90,7 +96,19 @@
 		e.target.classList.remove('entered');
 	});
 
-	var els = document.querySelectorAll('.target');
-	lc(els);
+	document.addEventListener('attached', function(e){
+		e.target.innerHTML = 'attached';
+	});
 
+
+	lc('.target', {within: 'body'});
+
+
+	var el = document.createElement('div');
+	el.className = 'target';
+	document.querySelector('.add').addEventListener('click', function(){
+		for (var i = 10; i--;){
+			document.body.appendChild(el.cloneNode());
+		}
+	});
 </script>

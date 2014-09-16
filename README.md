@@ -1,70 +1,59 @@
 ## Lifecycle-events
 
-Polyfill-like lib providing lifecycle events for HTML elements: `enteredView`, `leftView`, `attached`, `detached` and `attributeChanged`.
+Polyfill-like lib providing lifecycle events for HTML elements: `enteredView`, `leftView`, `attached` and `detached`.
+
+It is _2.1 kB_ gzipped.
 
 
-## Use
+## Use as polyfill
 
 Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/dist/lifecycle.min.js):
 
 ```html
 <script src="lifecycle.min.js"></script>
+<script>lifecycle('*');</script>
 ```
 
 
-or install module (to browserify):
+## Use customly:
+
+Install browserify module:
 
 `$ npm install lifecycle-events`
-
-```js
-var lifecycle = require('lifecycle-events');
-```
 
 
 Code:
 
 ```js
-//Enable lifecycle events for all elements matching the selector
-lifecycle.enable('*');
+var lifecycle = require('lifecycle-events');
+
 
 //Enable lifecycle events for the Node/NodeList passed
 lifecycle.enable(element);
 element.addEventListener('enteredView', function(){});
 element.addEventListener('attached', function(){});
 
-//Pass custom options
-lifecycle.enable('.item', {
-	mutations: false,
-	viewport: true,
-	container: document.querySelector('.container')
-});
+
+//Enable only viewport events
+lifecycle.enableViewport('.item');
+
+
+//Enable only mutation events within container passed
+lifecycle.enableMutation('.item', '.feed');
+
 
 //Disable lifecycle events for previously added selector
 lifecycle.disable('*');
+
 
 //Disable all lifecycle events
 lifecycle.disable();
 ```
 
 
-Also can be used sepatately:
-```js
-var vpEvents = require('lifecycle-events/viewport');
+## TODO
 
-vpEvents('*');
-
-var mutations = require('lifecycle-events/mutations');
-mutations('.item', container);
-```
-
-
-## Options
-
-| Parameter | Type | Default | Description |
-|----|:---:|:----:|---:|
-| `mutations` | _bool_ | `true` | `attached` and `detached` events |
-| `viewport` | _bool_ | `true` | `enteredView` and `leftView` events |
-| `container` | _string_ &#124; _Element_ | `document` | Container to observe mutations within (speed purposes) |
+* Optimize enabled selectors. For example, avoid extra enable if you have '*' enabled. And so on.
 
 
 ## License

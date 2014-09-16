@@ -6,7 +6,9 @@
   "dependencies": {
     "muevents": "*",
     "intersects": "*",
-    "tiny-element": "*"
+    "tiny-element": "*",
+    "matches-selector": "~1.0.0",
+    "mutation-observer": "0.0.1"
   },
   "devDependencies": {
     "require-stub": "0.0.16",

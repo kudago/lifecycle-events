@@ -1,6 +1,9 @@
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.lifecycle=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var extend = require('extend');
-var viewport = require('./viewport');
+var MO = require('mutation-observer');
+var evt = require('muevents');
+var matches = require('matches-selector');
+var getElements = require('tiny-element');
+var intersects = require('intersects');
 
 
 var doc = document, win = window;
@@ -16,27 +19,22 @@ var doc = document, win = window;
  * @todo  Multiple observations to an extent faster than one global observer:
  *        http://jsperf.com/mutation-observer-cases
  */
-var lifecycle = module.exports = enableLifecycleEvents;
-lifecycle.enable = enableLifecycleEvents;
-lifecycle.disable = disableLifecycleEvents;
+var lifecycle = module.exports = enableLifecycleEventsFor;
+lifecycle.enable = enableLifecycleEventsFor;
+lifecycle.disable = disableLifecycleEventsFor;
+lifecycle.enableViewport = enableViewportEventsFor;
+lifecycle.disableViewport = disableViewportEventsFor;
+lifecycle.enableMutations = enableMutationEventsFor;
+lifecycle.disableMutations = disableMutationEventsFor;
 
 
-/** Default options */
-var defaults = {
-	/** element to specify selector */
-	container: document,
-	/** enteredView & leftView events */
-	viewport: true,
-	/** attached & detached events */
-	mutations: true,
-	/** attributeChanged */
-	attributes: false,
-
-	/** Callback names */
+/** Defaults can be changed outside */
+var defaults = lifecycle.defaults = {
+	attachedCallbackName: 'attached',
+	detachedCallbackName: 'detached',
 	enteredViewCallbackName: 'enteredView',
 	leftViewCallbackName: 'leftView',
-	attachedCallbackName: 'attached',
-	detachedCallbackName: 'detached'
+	checkViewportCallbackName: 'checkViewport'
 };
 
 
@@ -45,105 +43,232 @@ var defaults = {
  * @main
  * @chainable
  */
-function enableLifecycleEvents(query, options){
-
-	options = extend({}, defaults, options);
-
-	if (options.viewport) viewport(query, options);
-	// if (options.mutations) enableMutationEvents(query, options);
-	// if (options.attributes) enableAttributesEvents(query, options);
+function enableLifecycleEventsFor(query, options){
+	enableViewportEventsFor(query, options.tolerance || options);
+	enableMutationEventsFor(query, options.within || options);
 }
 
 
 /**
  * Lifecycle disabler
  */
-function disableLifecycleEvents(){
-
+function disableLifecycleEventsFor(query){
+	disableViewportEventsFor(query);
+	disableMutationEventsFor(query);
 }
-},{"./viewport":6,"extend":2}],2:[function(require,module,exports){
-var hasOwn = Object.prototype.hasOwnProperty;
-var toString = Object.prototype.toString;
-var undefined;
 
-var isPlainObject = function isPlainObject(obj) {
-	"use strict";
-	if (!obj || toString.call(obj) !== '[object Object]' || obj.nodeType || obj.setInterval) {
-		return false;
+
+
+/*  -------------------------  M  U  T  A  T  I  O  N  S  ---------------------------  */
+
+
+/** One observer to observe a lot of nodes  */
+var observer = new MO(mutationHandler);
+
+
+/** Set of targets to observe */
+var mTargets = [];
+
+
+/** Attached items set */
+var attachedItemsSet = new WeakSet;
+
+
+/**
+ * Observer targets
+ *
+ * @param {(string|Node|NodeList|document)} query Target pointer
+ * @param {Object} options Settings for observer
+ */
+function enableMutationEventsFor(query, within){
+	within = getElements(within || doc);
+
+	//save cached version of target
+	mTargets.push(query);
+
+	//make observer observe one more target
+	observer.observe(within, {subtree: true, childList: true});
+
+	//check initial nodes
+	checkAddedNodes(getElements.call(within, query, true));
+}
+
+
+/**
+ * Stop observing items
+ */
+function disableMutationEventsFor(target){
+	var idx = mTargets.indexOf(target);
+	if (idx >= 0) {
+		mTargets.splice(idx,1);
 	}
+}
 
-	var has_own_constructor = hasOwn.call(obj, 'constructor');
-	var has_is_property_of_method = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
-	// Not own constructor property must be Object
-	if (obj.constructor && !has_own_constructor && !has_is_property_of_method) {
-		return false;
+
+/**
+ * Handle a mutation passed
+ */
+function mutationHandler(mutations){
+	mutations.forEach(function(mutation){
+		checkAddedNodes(mutation.addedNodes);
+		checkRemovedNodes(mutation.removedNodes);
+	});
+}
+
+
+/**
+ * Check nodes list to call attached
+ */
+function checkAddedNodes(nodes){
+	var newItems = false;
+
+	//find attached evt targets
+	for (var i = nodes.length; i--;){
+		var node = nodes[i];
+		if (node.nodeType !== 1) continue;
+
+		//find options corresponding to the node
+		if (!attachedItemsSet.has(node)){
+			if (isObservable(node)) {
+				if (!newItems) {
+					newItems = true;
+					checkViewport();
+				}
+				attachedItemsSet.add(node);
+				evt.emit(node, defaults.attachedCallbackName, null, true);
+			}
+		}
 	}
+}
 
-	// Own properties are enumerated firstly, so to speed up,
-	// if last one is own, then all properties are own.
-	var key;
-	for (key in obj) {}
 
-	return key === undefined || hasOwn.call(obj, key);
+/**
+ * Check nodes list to call detached
+ */
+function checkRemovedNodes(nodes){
+	//handle detached evt
+	for (var i = nodes.length; i--;){
+		var node = node[i];
+		if (node.nodeType !== 1) continue;
+
+		//find options corresponding to the node
+		if (attachedItemsSet.has(node)){
+			evt.emit(node, defaults.detachedCallbackName, null, true);
+			attachedItemsSet.delete(node);
+		}
+	}
+}
+
+
+/**
+ * Try to retrieve an options according to the target passed
+ *
+ * @param {Node} node An element to oppose options to
+ *
+ * @return {bool} true, if node is found
+ */
+function isObservable(node){
+	//check queries
+	for (var i = mTargets.length, target; i--;) {
+		target = mTargets[i];
+		if (node === target) return true;
+		if (typeof target === 'string' && matches(node, target)) return true;
+	}
+}
+
+
+
+/*  ---------------------------  V  I  E  W  P  O  R  T  ----------------------------  */
+
+
+/**
+ * List of observable viewport events targets/queries
+ */
+var vpTargets = [];
+
+
+/** Set of entered viewport items */
+var enteredItemsSet = new WeakSet;
+
+
+/**
+ * Observe targets
+ */
+function enableViewportEventsFor(target, tolerance){
+	vpTargets.push(target);
+	checkViewport();
+}
+
+
+/**
+ * Remove targets from observation list
+ */
+function disableViewportEventsFor(target){
+	var idx = vpTargets.indexOf(target);
+	if (idx >= 0) {
+		vpTargets.splice(idx,1);
+	}
+}
+
+
+/** viewport sizes */
+var vpRect = {
+	top:0,
+	left:0,
+	bottom: win.innerHeight,
+	right: win.innerWidth,
+	width: win.innerWidth,
+	height: win.innerHeight
 };
 
-module.exports = function extend() {
-	"use strict";
-	var options, name, src, copy, copyIsArray, clone,
-		target = arguments[0],
-		i = 1,
-		length = arguments.length,
-		deep = false;
 
-	// Handle a deep copy situation
-	if (typeof target === "boolean") {
-		deep = target;
-		target = arguments[1] || {};
-		// skip the boolean and the target
-		i = 2;
-	} else if (typeof target !== "object" && typeof target !== "function" || target == undefined) {
-			target = {};
-	}
+/** keep viewport updated */
+evt.on(win, 'resize', function(){
+	vpRect.bottom = win.innerHeight;
+	vpRect.right = win.innerWidth;
+	vpRect.width = win.innerWidth;
+	vpRect.height = win.innerHeight;
+});
 
-	for (; i < length; ++i) {
-		// Only deal with non-null/undefined values
-		if ((options = arguments[i]) != null) {
-			// Extend the base object
-			for (name in options) {
-				src = target[name];
-				copy = options[name];
 
-				// Prevent never-ending loop
-				if (target === copy) {
-					continue;
+
+/** add scroll handler for the doc */
+evt
+.on(doc, 'scroll', checkViewport)
+.on(doc, 'DOMContentLoaded', checkViewport);
+
+
+
+/** check elements need to be entered/left */
+function checkViewport(){
+	for (var i = vpTargets.length; i--;){
+		var query = vpTargets[i];
+
+		var targets = getElements(query, true);
+
+		for (var j = targets.length; j--;){
+			var target = targets[j];
+			var targetRect = target.getBoundingClientRect();
+
+			//if item is entered - check to call entrance
+			if (enteredItemsSet.has(target)){
+				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
+					enteredItemsSet.delete(target);
+					evt.emit(target, defaults.leftViewCallbackName, null, true);
 				}
+			}
 
-				// Recurse if we're merging plain objects or arrays
-				if (deep && copy && (isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
-					if (copyIsArray) {
-						copyIsArray = false;
-						clone = src && Array.isArray(src) ? src : [];
-					} else {
-						clone = src && isPlainObject(src) ? src : {};
-					}
-
-					// Never move original objects, clone them
-					target[name] = extend(deep, clone, copy);
-
-				// Don't bring in undefined values
-				} else if (copy !== undefined) {
-					target[name] = copy;
+			//check to call leave
+			else {
+				if (intersects(targetRect, vpRect, {tolerance: 0})) {
+					enteredItemsSet.add(target);
+					evt.emit(target, defaults.enteredViewCallbackName, null, true);
 				}
 			}
 		}
 	}
-
-	// Return the modified object
-	return target;
-};
-
-
-},{}],3:[function(require,module,exports){
+}
+},{"intersects":2,"matches-selector":3,"muevents":4,"mutation-observer":5,"tiny-element":6}],2:[function(require,module,exports){
 /** @module  intersects */
 module.exports = intersects;
 
@@ -203,6 +328,36 @@ function intersects (a, b, opts){
 
 	return false;
 }
+},{}],3:[function(require,module,exports){
+'use strict';
+
+var proto = Element.prototype;
+var vendor = proto.matches
+  || proto.matchesSelector
+  || proto.webkitMatchesSelector
+  || proto.mozMatchesSelector
+  || proto.msMatchesSelector
+  || proto.oMatchesSelector;
+
+module.exports = match;
+
+/**
+ * Match `el` to `selector`.
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @return {Boolean}
+ * @api public
+ */
+
+function match(el, selector) {
+  if (vendor) return vendor.call(el, selector);
+  var nodes = el.parentNode.querySelectorAll(selector);
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i] == el) return true;
+  }
+  return false;
+}
 },{}],4:[function(require,module,exports){
 /** @module muevents */
 module.exports = {
@@ -226,7 +381,7 @@ var targetCbCache = new WeakMap;
 * @chainable
 */
 function bind(target, evt, fn){
-	//bind all listeners passed
+	//walk by list of instances
 	if (fn instanceof Array){
 		for (var i = fn.length; i--;){
 			bind(target, evt, fn[i]);
@@ -234,26 +389,38 @@ function bind(target, evt, fn){
 		return;
 	}
 
+
 	//DOM events
-	if (isEventTarget(target)) {
+	if (isDOMEventTarget(target)) {
 		//bind target fn
 		if ($){
 			//delegate to jquery
 			$(target).on(evt, fn);
 		} else {
-			//listen element
+			//listen to element
 			target.addEventListener(evt, fn);
 		}
 		//FIXME: old IE
 	}
 
-	//Non-DOM events
+	//target events
+	else {
+		var onMethod = getOn(target);
+
+		//use target event system, if possible
+		if (onMethod) {
+			onMethod.call(target, evt, fn);
+		}
+	}
+
+
+	//Save callback
 	//ensure callbacks array for target exist
 	if (!targetCbCache.has(target)) targetCbCache.set(target, {});
 	var targetCallbacks = targetCbCache.get(target);
 
-	//save callback
 	(targetCallbacks[evt] = targetCallbacks[evt] || []).push(fn);
+
 
 	return this;
 }
@@ -273,6 +440,7 @@ function unbind(target, evt, fn){
 		return;
 	}
 
+
 	//unbind all listeners if no fn specified
 	if (fn === undefined) {
 		var callbacks = targetCbCache.get(target);
@@ -289,19 +457,32 @@ function unbind(target, evt, fn){
 		return;
 	}
 
-	//DOM events on elements
-	if (isEventTarget(target)) {
+
+	//DOM events
+	if (isDOMEventTarget(target)) {
 		//delegate to jquery
 		if ($){
 			$(target).off(evt, fn);
 		}
 
-		//listen element
+		//listen to element
 		else {
 			target.removeEventListener(evt, fn);
 		}
 	}
 
+	//target events
+	else {
+		var offMethod = getOff(target);
+
+		//use target event system, if possible
+		if (offMethod) {
+			offMethod.call(target, evt, fn);
+		}
+	}
+
+
+	//Forget callback
 	//ignore if no event specified
 	if (!targetCbCache.has(target)) return;
 
@@ -317,6 +498,7 @@ function unbind(target, evt, fn){
 		}
 	}
 
+
 	return this;
 }
 
@@ -329,8 +511,9 @@ function unbind(target, evt, fn){
 function fire(target, eventName, data, bubbles){
 	if (!target) return;
 
+
 	//DOM events
-	if (isEventTarget(target)) {
+	if (isDOMEventTarget(target)) {
 		if ($){
 			//TODO: decide how to pass data
 			var evt = $.Event( eventName, data );
@@ -355,6 +538,16 @@ function fire(target, eventName, data, bubbles){
 
 	//no-DOM events
 	else {
+		//Target events
+		var emitMethod = getEmit(target);
+
+		//use target event system, if possible
+		if (emitMethod) {
+			return emitMethod.call(target, eventName, data);
+		}
+
+
+		//fall back to default event system
 		//ignore if no event specified
 		if (!targetCbCache.has(target)) return;
 
@@ -372,126 +565,58 @@ function fire(target, eventName, data, bubbles){
 		}
 	}
 
+
 	return this;
 }
 
 
 
-
 /**
- * detects whether element is able to emit/dispatch events
+ * detect whether DOM element implements EventTarget interface
  * @todo detect eventful objects in a more wide way
  */
-function isEventTarget (target){
-	return target && (!!target.addEventListener || (target.on && target.off && target.trigger));
+function isDOMEventTarget (target){
+	return target && (!!target.addEventListener);
+}
+
+
+/**
+ * Return target’s `on` method, if it is eventable
+ */
+function getOn (target){
+	return target.on || target.bind || target.addEventListener || target.addListener;
+}
+
+
+/**
+ * Return target’s `off` method, if it is eventable
+ */
+function getOff (target){
+	return target.off || target.unbind || target.removeEventListener || target.removeListener;
+}
+
+
+/**
+ * Return target’s `emit` method, if it is eventable
+ */
+function getEmit (target){
+	return target.emit || target.trigger || target.fire || target.dispatchEvent || target.dispatch;
 }
 },{}],5:[function(require,module,exports){
+
+module.exports = window.MutationObserver
+  || window.WebKitMutationObserver
+  || window.MozMutationObserver;
+
+},{}],6:[function(require,module,exports){
 var slice = [].slice;
-var ctx = document;
 
 module.exports = function (selector, multiple) {
+  var ctx = this === window ? document : this;
+
   return (typeof selector == 'string')
     ? (multiple) ? slice.call(ctx.querySelectorAll(selector), 0) : ctx.querySelector(selector)
-    : (selector.length) ? slice.call(selector, 0) : selector;
+    : (selector instanceof Node || selector === window || !selector.length) ? selector : slice.call(selector, 0);
 };
-},{}],6:[function(require,module,exports){
-var getElements = require('tiny-element');
-var evt = require('muevents');
-var intersects = require('intersects');
-
-
-/**
- * @module lifecycle-events/viewport
- *
- * @True {[type]}
- */
-module.exports = enableViewportEventsFor;
-
-
-var win = window, doc = document;
-
-/**
- * List of observable viewport events targets/queries
- */
-var vpTargets = [];
-
-
-/**
- * Observe targets
- */
-function enableViewportEventsFor(target, options){
-	//append target to options
-	options.query = target;
-
-	//ensure tolerance
-	options.tolerance = options.tolerance === undefined ? 0 : options.tolerance;
-
-	vpTargets.push(options);
-	checkViewport();
-}
-
-
-/** viewport sizes */
-var vpRect = {
-	top:0,
-	left:0,
-	bottom:win.innerHeight,
-	right:win.innerWidth,
-	width: win.innerWidth,
-	height: win.innerHeight
-};
-
-
-/** keep viewport updated */
-evt.on(win, 'resize', function(){
-	vpRect.bottom = win.innerHeight;
-	vpRect.right = win.innerWidth;
-	vpRect.width = win.innerWidth;
-	vpRect.height = win.innerHeight;
-});
-
-
-
-/** Set of entered viewport items */
-var enteredItemsSet = new WeakSet;
-
-
-/** add scroll handler for the doc */
-evt
-.on(doc, 'scroll', checkViewport)
-.on(doc, 'DOMContentLoaded', checkViewport);
-
-
-
-/** check elements need to be entered/left */
-function checkViewport(){
-	for (var i = 0; i < vpTargets.length; i++){
-		var targetOptions = vpTargets[i];
-		var query = targetOptions.query;
-
-		var targets = getElements(query, true);
-
-		for (var j = targets.length; j--;){
-			var target = targets[j];
-			var targetRect = target.getBoundingClientRect();
-
-			//if item is entered - check to call entrance
-			if (enteredItemsSet.has(target)){
-				if (!intersects(targetRect, vpRect, targetOptions)) {
-					enteredItemsSet.delete(target);
-					evt.emit(target, targetOptions.leftViewCallbackName, null, true);
-				}
-			}
-
-			//check to call leave
-			else {
-				if (intersects(targetRect, vpRect, targetOptions)) {
-					enteredItemsSet.add(target);
-					evt.emit(target, targetOptions.enteredViewCallbackName, null, true);
-				}
-			}
-		}
-	}
-}
-},{"intersects":3,"muevents":4,"tiny-element":5}]},{},[1])(1)
+},{}]},{},[1])(1)
 });

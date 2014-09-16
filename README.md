@@ -1,11 +1,11 @@
-## Lifecycle-events
+## Lifecycle events
 
-Polyfill-like lib providing lifecycle events for HTML elements: `enteredView`, `leftView`, `attached` and `detached`.
+Polyfill-like lib enabling lifecycle events for HTML elements: `enteredView`, `leftView`, `attached` and `detached`.
 
 It is _2.1 kB_ gzipped.
 
 
-## Use as polyfill
+### Use as polyfill
 
 Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/dist/lifecycle.min.js):
 
@@ -15,7 +15,7 @@ Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/di
 ```
 
 
-## Use customly:
+### Custom use
 
 Install browserify module:
 

@@ -32,8 +32,7 @@ var defaults = lifecycle.defaults = {
 	attachedCallbackName: 'attached',
 	detachedCallbackName: 'detached',
 	enteredViewCallbackName: 'enteredView',
-	leftViewCallbackName: 'leftView',
-	checkViewportCallbackName: 'checkViewport'
+	leftViewCallbackName: 'leftView'
 };
 
 

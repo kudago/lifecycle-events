@@ -71,7 +71,7 @@ lifecycle.defaults.leftViewCallbackName = 'disappeared';
 ## TODO
 
 * Optimize enabled selectors. For example, avoid extra enabling if you have '*' enabled. And so on.
-
+* Testling table
 
 ## License
 

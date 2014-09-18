@@ -146,7 +146,7 @@ function checkAddedNodes(nodes){
 function checkRemovedNodes(nodes){
 	//handle detached evt
 	for (var i = nodes.length; i--;){
-		var node = node[i];
+		var node = nodes[i];
 		if (node.nodeType !== 1) continue;
 
 		//find options corresponding to the node

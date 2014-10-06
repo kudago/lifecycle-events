@@ -1,6 +1,6 @@
 {
   "name": "lifecycle-events",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Enable lifecycle events for DOM-elements: attached, detached, enteredView, leftView",
   "main": "index.js",
   "dependencies": {

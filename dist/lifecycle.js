@@ -1,6 +1,6 @@
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.lifecycle=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var MO = require('mutation-observer');
-var evt = require('muevents');
+var evt = require('emmy');
 var matches = require('matches-selector');
 var getElements = require('tiny-element');
 var intersects = require('intersects');
@@ -33,8 +33,7 @@ var defaults = lifecycle.defaults = {
 	attachedCallbackName: 'attached',
 	detachedCallbackName: 'detached',
 	enteredViewCallbackName: 'enteredView',
-	leftViewCallbackName: 'leftView',
-	checkViewportCallbackName: 'checkViewport'
+	leftViewCallbackName: 'leftView'
 };
 
 
@@ -148,7 +147,7 @@ function checkAddedNodes(nodes){
 function checkRemovedNodes(nodes){
 	//handle detached evt
 	for (var i = nodes.length; i--;){
-		var node = node[i];
+		var node = nodes[i];
 		if (node.nodeType !== 1) continue;
 
 		//find options corresponding to the node
@@ -268,7 +267,429 @@ function checkViewport(){
 		}
 	}
 }
-},{"intersects":2,"matches-selector":3,"muevents":4,"mutation-observer":5,"tiny-element":6}],2:[function(require,module,exports){
+},{"emmy":2,"intersects":4,"matches-selector":5,"mutation-observer":6,"tiny-element":7}],2:[function(require,module,exports){
+var icicle = require('icicle');
+
+
+/** environment guarant */
+var $ = typeof jQuery === 'undefined' ? undefined : jQuery;
+var doc = typeof document === 'undefined' ? undefined : document;
+var win = typeof window === 'undefined' ? undefined : window;
+
+
+/** Lists of methods */
+var onNames = ['on', 'bind', 'addEventListener', 'addListener'];
+var oneNames = ['one', 'once', 'addOnceEventListener', 'addOnceListener'];
+var offNames = ['off', 'unbind', 'removeEventListener', 'removeListener'];
+var emitNames = ['emit', 'trigger', 'fire', 'dispatchEvent'];
+
+/** Locker flags */
+var emitFlag = emitNames[0], onFlag = onNames[0], oneFlag = onNames[0], offFlag = offNames[0];
+
+
+/**
+ * @constructor
+ *
+ * Main EventEmitter interface.
+ * Wraps any target passed to an Emitter interface
+ */
+function Emmy(target){
+	if (!target) return;
+
+	//create emitter methods on target, if none
+	if (!getMethodOneOf(target, onNames)) target.on = EmmyPrototype.on.bind(target);
+	if (!getMethodOneOf(target, offNames)) target.off = EmmyPrototype.off.bind(target);
+	if (!getMethodOneOf(target, oneNames)) target.one = target.once = EmmyPrototype.one.bind(target);
+	if (!getMethodOneOf(target, emitNames)) target.emit = EmmyPrototype.emit.bind(target);
+
+	return target;
+}
+
+
+/** Make DOM objects be wrapped as jQuery objects, if jQuery is enabled */
+var EmmyPrototype = Emmy.prototype;
+
+
+/**
+ * Return target’s method one of the passed in list, if target is eventable
+ * Use to detect whether target has some fn
+ */
+function getMethodOneOf(target, list){
+	var result;
+	for (var i = 0, l = list.length; i < l; i++) {
+		result = target[list[i]];
+		if (result) return result;
+	}
+}
+
+
+/** Set of target callbacks, {target: [cb1, cb2, ...]} */
+var targetCbCache = new WeakMap;
+
+
+/**
+* Bind fn to the target
+* @todo  recognize jquery object
+* @chainable
+*/
+EmmyPrototype.on =
+EmmyPrototype.addEventListener = function(evt, fn){
+	var target = this;
+
+	//walk by list of instances
+	if (fn instanceof Array){
+		for (var i = fn.length; i--;){
+			EmmyPrototype.on.call(target, evt, fn[i]);
+		}
+		return target;
+	}
+
+	//target events
+	var onMethod = getMethodOneOf(target, onNames);
+
+	//use target event system, if possible
+	//avoid self-recursions from the outside
+	if (onMethod && onMethod !== EmmyPrototype.on) {
+		//if it’s frozen - ignore call
+		if (icicle.freeze(target, onFlag + evt)){
+			onMethod.call(target, evt, fn);
+			icicle.unfreeze(target, onFlag + evt);
+		}
+		else {
+			return target;
+		}
+	}
+
+	saveCallback(target, evt, fn);
+
+	return target;
+};
+
+
+/**
+ * Add callback to the list of callbacks associated with target
+ */
+function saveCallback(target, evt, fn){
+	//ensure callbacks array for target exists
+	if (!targetCbCache.has(target)) targetCbCache.set(target, {});
+	var targetCallbacks = targetCbCache.get(target);
+
+	(targetCallbacks[evt] = targetCallbacks[evt] || []).push(fn);
+}
+
+
+/**
+ * Add an event listener that will be invoked once and then removed.
+ *
+ * @return {Emmy}
+ * @chainable
+ */
+EmmyPrototype.once =
+EmmyPrototype.one = function(evt, fn){
+	var target = this;
+
+	//walk by list of instances
+	if (fn instanceof Array){
+		for (var i = fn.length; i--;){
+			EmmyPrototype.one.call(target, evt, fn[i]);
+		}
+		return target;
+	}
+
+	//target events
+	var oneMethod = getMethodOneOf(target, oneNames);
+
+	//use target event system, if possible
+	//avoid self-recursions from the outside
+	if (oneMethod && oneMethod !== EmmyPrototype.one) {
+		if (icicle.freeze(target, oneFlag + evt)){
+			//use target event system, if possible
+			oneMethod.call(target, evt, fn);
+			saveCallback(target, evt, fn);
+			icicle.unfreeze(target, oneFlag + evt);
+		}
+
+		else {
+			return target;
+		}
+	}
+
+	//wrap callback to once-call
+	function cb() {
+		EmmyPrototype.off.call(target, evt, fn);
+		fn.apply(target, arguments);
+	}
+
+	cb.fn = fn;
+
+	//bind wrapper default way
+	EmmyPrototype.on.call(target, evt, cb);
+
+	return target;
+};
+
+
+/**
+* Bind fn to a target
+* @chainable
+*/
+EmmyPrototype.off =
+EmmyPrototype.removeListener =
+EmmyPrototype.removeAllListeners =
+EmmyPrototype.removeEventListener = function (evt, fn){
+	var target = this;
+
+	//unbind all listeners passed
+	if (fn instanceof Array){
+		for (var i = fn.length; i--;){
+			EmmyPrototype.off.call(target, evt, fn[i]);
+		}
+		return target;
+	}
+
+
+	//unbind all listeners if no fn specified
+	if (fn === undefined) {
+		var callbacks = targetCbCache.get(target);
+		if (!callbacks) return target;
+		//unbind all if no evtRef defined
+		if (evt === undefined) {
+			for (var evtName in callbacks) {
+				EmmyPrototype.off.call(target, evtName, callbacks[evtName]);
+			}
+		}
+		else if (callbacks[evt]) {
+			EmmyPrototype.off.call(target, evt, callbacks[evt]);
+		}
+		return target;
+	}
+
+
+	//target events
+	var offMethod = getMethodOneOf(target, offNames);
+
+	//use target event system, if possible
+	//avoid self-recursion from the outside
+	if (offMethod && offMethod !== EmmyPrototype.off) {
+		if (icicle.freeze(target, offFlag + evt)){
+			offMethod.call(target, evt, fn);
+			icicle.unfreeze(target, offFlag + evt);
+		}
+		//if it’s frozen - ignore call
+		else {
+			return target;
+		}
+	}
+
+
+	//Forget callback
+	//ignore if no event specified
+	if (!targetCbCache.has(target)) return target;
+
+	var evtCallbacks = targetCbCache.get(target)[evt];
+
+	if (!evtCallbacks) return target;
+
+	//remove specific handler
+	for (var i = 0; i < evtCallbacks.length; i++) {
+		if (evtCallbacks[i] === fn || evtCallbacks[i].fn === fn) {
+			evtCallbacks.splice(i, 1);
+			break;
+		}
+	}
+
+	return target;
+};
+
+
+
+/**
+* Event trigger
+* @chainable
+*/
+EmmyPrototype.emit =
+EmmyPrototype.dispatchEvent = function(eventName, data, bubbles){
+	var target = this, emitMethod, evt = eventName;
+	if (!target) return;
+
+	//Create proper event for DOM objects
+	if (target.nodeType || target === doc || target === win) {
+		//NOTE: this doesnot bubble on disattached elements
+
+		if (eventName instanceof Event) {
+			evt = eventName;
+		} else {
+			evt =  document.createEvent('CustomEvent');
+			evt.initCustomEvent(eventName, bubbles, true, data);
+		}
+
+		// var evt = new CustomEvent(eventName, { detail: data, bubbles: bubbles })
+
+		emitMethod = target.dispatchEvent;
+	}
+
+	//create event for jQuery object
+	else if ($ && target instanceof $) {
+		//TODO: decide how to pass data
+		var evt = $.Event( eventName, data );
+		evt.detail = data;
+		emitMethod = bubbles ? targte.trigger : target.triggerHandler;
+	}
+
+	//Target events
+	else {
+		emitMethod = getMethodOneOf(target, emitNames);
+	}
+
+
+	//use locks to avoid self-recursion on objects wrapping this method (e. g. mod instances)
+	if (emitMethod && emitMethod !== EmmyPrototype.emit) {
+		if (icicle.freeze(target, emitFlag + eventName)) {
+			//use target event system, if possible
+			emitMethod.call(target, evt, data, bubbles);
+			icicle.unfreeze(target, emitFlag + eventName);
+			return target;
+		}
+		//if event was frozen - perform normal callback
+	}
+
+
+	//fall back to default event system
+	//ignore if no event specified
+	if (!targetCbCache.has(target)) return target;
+
+	var evtCallbacks = targetCbCache.get(target)[evt];
+
+	if (!evtCallbacks) return target;
+
+	//copy callbacks to fire because list can be changed in some handler
+	var fireList = evtCallbacks.slice();
+	for (var i = 0; i < fireList.length; i++ ) {
+		fireList[i] && fireList[i].call(target, {
+			detail: data,
+			type: eventName
+		});
+	}
+
+	return target;
+};
+
+
+/**
+ * Return array of callbacks for `event`.
+ *
+ * @param {String} event
+ * @return {Array}
+ * @api public
+ */
+
+EmmyPrototype.listeners = function(evt){
+	var callbacks = targetCbCache.get(this);
+	return callbacks && callbacks[evt] || [];
+};
+
+
+/**
+ * Check if this emitter has `event` handlers.
+ *
+ * @param {String} event
+ * @return {Boolean}
+ * @api public
+ */
+
+EmmyPrototype.hasListeners = function(evt){
+	return !!EmmyPrototype.listeners.call(this, evt).length;
+};
+
+
+
+/** Static aliases for old API compliance */
+for (var name in EmmyPrototype) {
+	if (EmmyPrototype[name]) Emmy[name] = createStaticBind(name);
+}
+
+function createStaticBind(methodName){
+	return function(a, b, c, d){
+		var res = EmmyPrototype[methodName].call(a,b,c,d);
+		return res === a ? Emmy : res;
+	};
+}
+
+/** @module muevents */
+module.exports = Emmy;
+},{"icicle":3}],3:[function(require,module,exports){
+/**
+ * @module Icicle
+ */
+module.exports = {
+	freeze: lock,
+	unfreeze: unlock,
+	isFrozen: isLocked
+};
+
+
+/** Set of targets  */
+var lockCache = new WeakMap;
+
+
+/**
+ * Set flag on target with the name passed
+ *
+ * @return {bool} Whether lock succeeded
+ */
+function lock(target, name){
+	var locks = lockCache.get(target);
+	if (locks && locks[name]) return false;
+
+	//create lock set for a target, if none
+	if (!locks) {
+		locks = {};
+		lockCache.set(target, locks);
+	}
+
+	//set a new lock
+	locks[name] = true;
+
+	//return success
+	return true;
+}
+
+
+/**
+ * Unset flag on the target with the name passed.
+ *
+ * Note that if to return new value from the lock/unlock,
+ * then unlock will always return false and lock will always return true,
+ * which is useless for the user, though maybe intuitive.
+ *
+ * @param {*} target Any object
+ * @param {string} name A flag name
+ *
+ * @return {bool} Whether unlock failed.
+ */
+function unlock(target, name){
+	var locks = lockCache.get(target);
+	if (!locks || !locks[name]) return false;
+
+	locks[name] = null;
+
+	return true;
+}
+
+
+/**
+ * Return whether flag is set
+ *
+ * @param {*} target Any object to associate lock with
+ * @param {string} name A flag name
+ *
+ * @return {Boolean} Whether locked or not
+ */
+function isLocked(target, name){
+	var locks = lockCache.get(target);
+	return (locks && locks[name]);
+}
+},{}],4:[function(require,module,exports){
 /** @module  intersects */
 module.exports = intersects;
 
@@ -328,7 +749,7 @@ function intersects (a, b, opts){
 
 	return false;
 }
-},{}],3:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 var proto = Element.prototype;
@@ -358,257 +779,13 @@ function match(el, selector) {
   }
   return false;
 }
-},{}],4:[function(require,module,exports){
-/** @module muevents */
-module.exports = {
-	on: bind,
-	off: unbind,
-	emit: fire
-};
-
-
-/** jquery guarant */
-var $ = typeof jQuery === 'undefined' ? undefined : jQuery;
-
-
-/** set of target callbacks, {target: [cb1, cb2, ...]} */
-var targetCbCache = new WeakMap;
-
-
-/**
-* Bind fn to the target
-* @todo  recognize jquery object
-* @chainable
-*/
-function bind(target, evt, fn){
-	//walk by list of instances
-	if (fn instanceof Array){
-		for (var i = fn.length; i--;){
-			bind(target, evt, fn[i]);
-		}
-		return;
-	}
-
-
-	//DOM events
-	if (isDOMEventTarget(target)) {
-		//bind target fn
-		if ($){
-			//delegate to jquery
-			$(target).on(evt, fn);
-		} else {
-			//listen to element
-			target.addEventListener(evt, fn);
-		}
-		//FIXME: old IE
-	}
-
-	//target events
-	else {
-		var onMethod = getOn(target);
-
-		//use target event system, if possible
-		if (onMethod) {
-			onMethod.call(target, evt, fn);
-		}
-	}
-
-
-	//Save callback
-	//ensure callbacks array for target exist
-	if (!targetCbCache.has(target)) targetCbCache.set(target, {});
-	var targetCallbacks = targetCbCache.get(target);
-
-	(targetCallbacks[evt] = targetCallbacks[evt] || []).push(fn);
-
-
-	return this;
-}
-
-
-
-/**
-* Bind fn to a target
-* @chainable
-*/
-function unbind(target, evt, fn){
-	//unbind all listeners passed
-	if (fn instanceof Array){
-		for (var i = fn.length; i--;){
-			unbind(target, evt, fn[i]);
-		}
-		return;
-	}
-
-
-	//unbind all listeners if no fn specified
-	if (fn === undefined) {
-		var callbacks = targetCbCache.get(target);
-		if (!callbacks) return;
-		//unbind all if no evtRef defined
-		if (evt === undefined) {
-			for (var evtName in callbacks) {
-				unbind(target, evtName, callbacks[evtName]);
-			}
-		}
-		else if (callbacks[evt]) {
-			unbind(target, evt, callbacks[evt]);
-		}
-		return;
-	}
-
-
-	//DOM events
-	if (isDOMEventTarget(target)) {
-		//delegate to jquery
-		if ($){
-			$(target).off(evt, fn);
-		}
-
-		//listen to element
-		else {
-			target.removeEventListener(evt, fn);
-		}
-	}
-
-	//target events
-	else {
-		var offMethod = getOff(target);
-
-		//use target event system, if possible
-		if (offMethod) {
-			offMethod.call(target, evt, fn);
-		}
-	}
-
-
-	//Forget callback
-	//ignore if no event specified
-	if (!targetCbCache.has(target)) return;
-
-	var evtCallbacks = targetCbCache.get(target)[evt];
-
-	if (!evtCallbacks) return;
-
-	//remove specific handler
-	for (var i = 0; i < evtCallbacks.length; i++) {
-		if (evtCallbacks[i] === fn) {
-			evtCallbacks.splice(i, 1);
-			break;
-		}
-	}
-
-
-	return this;
-}
-
-
-
-/**
-* Event trigger
-* @chainable
-*/
-function fire(target, eventName, data, bubbles){
-	if (!target) return;
-
-
-	//DOM events
-	if (isDOMEventTarget(target)) {
-		if ($){
-			//TODO: decide how to pass data
-			var evt = $.Event( eventName, data );
-			evt.detail = data;
-			bubbles ? $(target).trigger(evt) : $(target).triggerHandler(evt);
-		} else {
-			//NOTE: this doesnot bubble on disattached elements
-			var evt;
-
-			if (eventName instanceof Event) {
-				evt = eventName;
-			} else {
-				evt =  document.createEvent('CustomEvent');
-				evt.initCustomEvent(eventName, bubbles, true, data);
-			}
-
-			// var evt = new CustomEvent(eventName, { detail: data, bubbles: bubbles })
-
-			target.dispatchEvent(evt);
-		}
-	}
-
-	//no-DOM events
-	else {
-		//Target events
-		var emitMethod = getEmit(target);
-
-		//use target event system, if possible
-		if (emitMethod) {
-			return emitMethod.call(target, eventName, data);
-		}
-
-
-		//fall back to default event system
-		//ignore if no event specified
-		if (!targetCbCache.has(target)) return;
-
-		var evtCallbacks = targetCbCache.get(target)[eventName];
-
-		if (!evtCallbacks) return;
-
-		//copy callbacks to fire because list can change in some handler
-		var fireList = evtCallbacks.slice();
-		for (var i = 0; i < fireList.length; i++ ) {
-			fireList[i] && fireList[i].call(target, {
-				detail: data,
-				type: eventName
-			});
-		}
-	}
-
-
-	return this;
-}
-
-
-
-/**
- * detect whether DOM element implements EventTarget interface
- * @todo detect eventful objects in a more wide way
- */
-function isDOMEventTarget (target){
-	return target && (!!target.addEventListener);
-}
-
-
-/**
- * Return target’s `on` method, if it is eventable
- */
-function getOn (target){
-	return target.on || target.bind || target.addEventListener || target.addListener;
-}
-
-
-/**
- * Return target’s `off` method, if it is eventable
- */
-function getOff (target){
-	return target.off || target.unbind || target.removeEventListener || target.removeListener;
-}
-
-
-/**
- * Return target’s `emit` method, if it is eventable
- */
-function getEmit (target){
-	return target.emit || target.trigger || target.fire || target.dispatchEvent || target.dispatch;
-}
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 
 module.exports = window.MutationObserver
   || window.WebKitMutationObserver
   || window.MozMutationObserver;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var slice = [].slice;
 
 module.exports = function (selector, multiple) {

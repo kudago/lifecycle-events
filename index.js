@@ -1,5 +1,5 @@
 var MO = require('mutation-observer');
-var evt = require('muevents');
+var evt = require('emmy');
 var matches = require('matches-selector');
 var getElements = require('tiny-element');
 var intersects = require('intersects');

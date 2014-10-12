@@ -87,6 +87,9 @@ function enableMutationEventsFor(query, within){
 	//make observer observe one more target
 	observer.observe(within, {subtree: true, childList: true});
 
+	//ignore not bound nodes
+	if (query instanceof Node && !doc.contains(query)) return;
+
 	//check initial nodes
 	checkAddedNodes(getElements.call(within, query, true));
 }

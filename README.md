@@ -73,6 +73,9 @@ lifecycle.defaults.leftViewCallbackName = 'disappeared';
 * Optimize enabled selectors. For example, avoid extra enabling if you have '*' enabled. And so on.
 * Testling table
 
-## License
 
-MIT
+## Unlicense
+
+This is free and unencumbered software released into the public domain.
+
+[![Unlicense](http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg)](http://unlicense.org/UNLICENSE)

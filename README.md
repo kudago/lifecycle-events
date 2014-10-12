@@ -2,10 +2,10 @@
 
 Polyfill-like lib enabling lifecycle events for HTML elements: `enteredView`, `leftView`, `attached` and `detached`.
 
-It is _2.1 kB_ gzipped.
+_2.1 kB_ gzipped.
 
 
-### A. Use as polyfill:
+### A. Use as a polyfill:
 
 Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/dist/lifecycle.min.js):
 
@@ -20,9 +20,9 @@ Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/di
 ```
 
 
-### B. Custom use:
+### B. Use as a browserify module:
 
-Install browserify module:
+Install:
 
 `$ npm install lifecycle-events`
 
@@ -43,11 +43,11 @@ element.addEventListener('attached', function(){});
 lifecycle.enableViewport('.item');
 
 
-//Enable only mutation events within container passed
+//Enable only mutation events within the container '.feed' (container is optional)
 lifecycle.enableMutation('.item', '.feed');
 
 
-//Disable lifecycle events for previously added selector
+//Disable lifecycle events for the previously added selector
 lifecycle.disable('*');
 
 
@@ -58,7 +58,7 @@ lifecycle.disable();
 ### Customize callback names
 
 By default, Polymer’s event names are used for events.
-You can redefine event names, defined in `lifecycle.defaults`:
+You can redefine event names via `lifecycle.defaults`:
 
 ```js
 lifecycle.defaults.attachedCallbackName = 'appended';

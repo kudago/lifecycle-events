@@ -41,9 +41,9 @@ var defaults = lifecycle.defaults = {
  * @main
  * @chainable
  */
-function enableLifecycleEventsFor(query, options){
-	enableViewportEventsFor(query, options.tolerance || options);
-	enableMutationEventsFor(query, options.within || options);
+function enableLifecycleEventsFor(query, within){
+	enableViewportEventsFor(query);
+	enableMutationEventsFor(query, within);
 }
 
 
@@ -76,7 +76,7 @@ var attachedItemsSet = new WeakSet;
  * Observer targets
  *
  * @param {(string|Node|NodeList|document)} query Target pointer
- * @param {Object} options Settings for observer
+ * @param {Object} within Settings for observer
  */
 function enableMutationEventsFor(query, within){
 	within = getElements(within || doc);
@@ -195,7 +195,7 @@ var enteredItemsSet = new WeakSet;
 /**
  * Observe targets
  */
-function enableViewportEventsFor(target, tolerance){
+function enableViewportEventsFor(target){
 	vpTargets.push(target);
 	checkViewport();
 }
@@ -253,7 +253,7 @@ function checkViewport(){
 
 			//if item is entered - check to call entrance
 			if (enteredItemsSet.has(target)){
-				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
+				if (!intersects(targetRect, vpRect)) {
 					enteredItemsSet.delete(target);
 					evt.emit(target, defaults.leftViewCallbackName, null, true);
 				}
@@ -261,7 +261,7 @@ function checkViewport(){
 
 			//check to call leave
 			else {
-				if (intersects(targetRect, vpRect, {tolerance: 0})) {
+				if (intersects(targetRect, vpRect)) {
 					enteredItemsSet.add(target);
 					evt.emit(target, defaults.enteredViewCallbackName, null, true);
 				}

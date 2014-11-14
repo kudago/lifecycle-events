@@ -253,7 +253,7 @@ function checkViewport(){
 
 			//if item is entered - check to call entrance
 			if (enteredItemsSet.has(target)){
-				if (!intersects(targetRect, vpRect)) {
+				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
 					enteredItemsSet.delete(target);
 					evt.emit(target, defaults.leftViewCallbackName, null, true);
 				}
@@ -261,7 +261,7 @@ function checkViewport(){
 
 			//check to call leave
 			else {
-				if (intersects(targetRect, vpRect)) {
+				if (intersects(targetRect, vpRect, {tolerance: 0})) {
 					enteredItemsSet.add(target);
 					evt.emit(target, defaults.enteredViewCallbackName, null, true);
 				}

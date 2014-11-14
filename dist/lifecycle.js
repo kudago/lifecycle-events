@@ -42,9 +42,9 @@ var defaults = lifecycle.defaults = {
  * @main
  * @chainable
  */
-function enableLifecycleEventsFor(query, options){
-	enableViewportEventsFor(query, options.tolerance || options);
-	enableMutationEventsFor(query, options.within || options);
+function enableLifecycleEventsFor(query, within){
+	enableViewportEventsFor(query);
+	enableMutationEventsFor(query, within);
 }
 
 
@@ -77,7 +77,7 @@ var attachedItemsSet = new WeakSet;
  * Observer targets
  *
  * @param {(string|Node|NodeList|document)} query Target pointer
- * @param {Object} options Settings for observer
+ * @param {Object} within Settings for observer
  */
 function enableMutationEventsFor(query, within){
 	within = getElements(within || doc);
@@ -87,6 +87,9 @@ function enableMutationEventsFor(query, within){
 
 	//make observer observe one more target
 	observer.observe(within, {subtree: true, childList: true});
+
+	//ignore not bound nodes
+	if (query instanceof Node && !doc.contains(query)) return;
 
 	//check initial nodes
 	checkAddedNodes(getElements.call(within, query, true));
@@ -193,7 +196,7 @@ var enteredItemsSet = new WeakSet;
 /**
  * Observe targets
  */
-function enableViewportEventsFor(target, tolerance){
+function enableViewportEventsFor(target){
 	vpTargets.push(target);
 	checkViewport();
 }
@@ -251,7 +254,7 @@ function checkViewport(){
 
 			//if item is entered - check to call entrance
 			if (enteredItemsSet.has(target)){
-				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
+				if (!intersects(targetRect, vpRect)) {
 					enteredItemsSet.delete(target);
 					evt.emit(target, defaults.leftViewCallbackName, null, true);
 				}
@@ -259,7 +262,7 @@ function checkViewport(){
 
 			//check to call leave
 			else {
-				if (intersects(targetRect, vpRect, {tolerance: 0})) {
+				if (intersects(targetRect, vpRect)) {
 					enteredItemsSet.add(target);
 					evt.emit(target, defaults.enteredViewCallbackName, null, true);
 				}
@@ -604,16 +607,22 @@ EmmyPrototype.hasListeners = function(evt){
 
 
 /** Static aliases for old API compliance */
-for (var name in EmmyPrototype) {
-	if (EmmyPrototype[name]) Emmy[name] = createStaticBind(name);
-}
+Emmy.bindStaticAPI = function(){
+	var self = this, proto = self.prototype;
 
-function createStaticBind(methodName){
-	return function(a, b, c, d){
-		var res = EmmyPrototype[methodName].call(a,b,c,d);
-		return res === a ? Emmy : res;
-	};
-}
+	for (var name in proto) {
+		if (proto[name]) self[name] = createStaticBind(name);
+	}
+
+	function createStaticBind(methodName){
+		return function(a, b, c, d){
+			var res = proto[methodName].call(a,b,c,d);
+			return res === a ? self : res;
+		};
+	}
+};
+Emmy.bindStaticAPI();
+
 
 /** @module muevents */
 module.exports = Emmy;
@@ -793,7 +802,7 @@ module.exports = function (selector, multiple) {
 
   return (typeof selector == 'string')
     ? (multiple) ? slice.call(ctx.querySelectorAll(selector), 0) : ctx.querySelector(selector)
-    : (selector instanceof Node || selector === window || !selector.length) ? selector : slice.call(selector, 0);
+    : (selector instanceof Node || selector === window || !selector.length) ? (multiple ? [selector] : selector) : slice.call(selector, 0);
 };
 },{}]},{},[1])(1)
 });

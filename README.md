@@ -1,4 +1,4 @@
-## Lifecycle events
+## Lifecycle events [![Code Climate](https://codeclimate.com/github/dfcreative/lifecycle-events/badges/gpa.svg)](https://codeclimate.com/github/dfcreative/lifecycle-events) <a href="UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="20"/></a>
 
 Polyfill-like lib enabling lifecycle events for HTML elements: `enteredView`, `leftView`, `attached` and `detached`.
 
@@ -68,10 +68,4 @@ lifecycle.defaults.leftViewCallbackName = 'disappeared';
 ```
 
 
-## TODO
-
-* Optimize enabled selectors. For example, avoid extra enabling if you have '*' enabled. And so on.
-* Testling table
-
-
-<a href="http://unlicense.org/UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="40"/></a>
+[![NPM](https://nodei.co/npm/lifecycle-events.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/lifecycle-events/)

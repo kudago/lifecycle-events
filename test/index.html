@@ -2,15 +2,7 @@
 
 
 <!-- dev -->
-<!-- <script src="../node_modules/require-stub/index.js"></script>
-<script src="../node_modules/muevents/index.js"></script>
-<script src="../node_modules/matches-selector/index.js"></script>
-<script src="../node_modules/intersects/index.js"></script>
-<script src="../node_modules/mutation-observer/index.js"></script>
-<script src="../node_modules/tiny-element/index.js"></script>
-
-<script src="../index.js" data-module-name="lifecycle-events"></script> -->
-
+<!-- <script src="../node_modules/require-stub/index.js"></script> -->
 
 <!-- dist -->
 <script src="../dist/lifecycle.min.js"></script>
@@ -86,7 +78,7 @@
 
 
 <script>
-	var lc = window.lifecycle || require('lifecycle-events');
+	var lc = window.lifecycle || require('..');
 
 	document.addEventListener('enteredView', function(e){
 		e.target.classList.add('entered');
@@ -101,7 +93,7 @@
 	});
 
 
-	lc('.target', {within: 'body'});
+	lc('.target', 'body');
 
 
 	var el = document.createElement('div');

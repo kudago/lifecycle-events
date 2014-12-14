@@ -9,13 +9,17 @@ var doc = document, win = window;
 
 
 /**
- * @module elements-lifecycle
+ * @module lifecycle-events
  *
+ * @todo  Work out tolerance issue (whether it needs to be passed as an option - sometimes useful, like to detect an element being fully visible)
+ *
+ * @todo  Optimize enabled selectors. For example, avoid extra enabling if you have '*' enabled. And so on.
+ * @todo  Testling table.
  * @todo  Ignore native CustomElements lifecycle events
- * @todo  Nested queryselector ten times faster than doc.querySelector:
+ *
+ * @note  Nested queryselector ten times faster than doc.querySelector:
  *        http://jsperf.com/document-vs-element-queryselectorall-performance/2
- * @todo  Build standalone package
- * @todo  Multiple observations to an extent faster than one global observer:
+ * @note  Multiple observations to an extent faster than one global observer:
  *        http://jsperf.com/mutation-observer-cases
  */
 var lifecycle = module.exports = enableLifecycleEventsFor;

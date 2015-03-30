@@ -1,5 +1,7 @@
 var MO = require('mutation-observer');
-var evt = require('emmy');
+var on = require('emmy/on');
+var emit = require('emmy/emit');
+var off = require('emmy/off');
 var matches = require('matches-selector');
 var getElements = require('tiny-element');
 var intersects = require('intersects');
@@ -140,7 +142,7 @@ function checkAddedNodes(nodes){
 					checkViewport();
 				}
 				attachedItemsSet.add(node);
-				evt.emit(node, defaults.attachedCallbackName, null, true);
+				emit(node, defaults.attachedCallbackName, null, true);
 			}
 		}
 	}
@@ -158,7 +160,7 @@ function checkRemovedNodes(nodes){
 
 		//find options corresponding to the node
 		if (attachedItemsSet.has(node)){
-			evt.emit(node, defaults.detachedCallbackName, null, true);
+			emit(node, defaults.detachedCallbackName, null, true);
 			attachedItemsSet.delete(node);
 		}
 	}
@@ -228,7 +230,7 @@ var vpRect = {
 
 
 /** keep viewport updated */
-evt.on(win, 'resize', function(){
+on(win, 'resize', function(){
 	vpRect.bottom = win.innerHeight;
 	vpRect.right = win.innerWidth;
 	vpRect.width = win.innerWidth;
@@ -238,9 +240,8 @@ evt.on(win, 'resize', function(){
 
 
 /** add scroll handler for the doc */
-evt
-.on(doc, 'scroll', checkViewport)
-.on(doc, 'DOMContentLoaded', checkViewport);
+on(doc, 'scroll', checkViewport);
+on(doc, 'DOMContentLoaded', checkViewport);
 
 
 
@@ -259,7 +260,7 @@ function checkViewport(){
 			if (enteredItemsSet.has(target)){
 				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
 					enteredItemsSet.delete(target);
-					evt.emit(target, defaults.leftViewCallbackName, null, true);
+					emit(target, defaults.leftViewCallbackName, null, true);
 				}
 			}
 
@@ -267,7 +268,7 @@ function checkViewport(){
 			else {
 				if (intersects(targetRect, vpRect, {tolerance: 0})) {
 					enteredItemsSet.add(target);
-					evt.emit(target, defaults.enteredViewCallbackName, null, true);
+					emit(target, defaults.enteredViewCallbackName, null, true);
 				}
 			}
 		}

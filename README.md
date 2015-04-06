@@ -32,9 +32,9 @@ Enable lifecycle events for HTML elements: `attached`, `detached`.
 
 ## API
 
-### lifecycleEvents.enable(selector)
+### lifecycleEvents.enable(selector, [container])
 
-Enable lifecycle events for an Element, NodeList or selector. If no selector specified, `'*'` is used.
+Enable lifecycle events for an Element, NodeList or selector. If no selector specified, `'*'` is used. An optional container element/selector may be specified in speed purpose.
 
 ### lifecycleEvents.disable(selector)
 

@@ -1,71 +1,52 @@
-## Lifecycle events [![Code Climate](https://codeclimate.com/github/dfcreative/lifecycle-events/badges/gpa.svg)](https://codeclimate.com/github/dfcreative/lifecycle-events) <a href="UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="20"/></a>
-
-Polyfill-like lib enabling lifecycle events for HTML elements: `enteredView`, `leftView`, `attached` and `detached`.
-
-_2.1 kB_ gzipped.
+## Lifecycle events [![Code Climate](https://codeclimate.com/github/kudago/lifecycle-events/badges/gpa.svg)](https://codeclimate.com/github/kudago/lifecycle-events) <a href="UNLICENSE"><img src="http://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg" width="20"/></a>
 
 
-### A. Use as a polyfill:
-
-Include [lifecycle.min.js](https://github.com/dfcreative/lifecycle/raw/master/dist/lifecycle.min.js):
-
-```html
-<script src="lifecycle.min.js"></script>
-<script>lifecycle('*');</script>
-
-<script>
-  $('.my-element').on('attached', function(){});
-  $('.my-other-element').on('enteredView', function(){});
-</script>
-```
+Enable lifecycle events for HTML elements: `attached`, `detached`.
 
 
-### B. Use as a browserify module:
-
-Install:
+## Usage
 
 `$ npm install lifecycle-events`
 
 
-Code:
-
 ```js
-var lifecycle = require('lifecycle-events');
+	var lifecycleEvents = require('lifecycle-events');
+
+	//enable lifecycle events for all elements on the page
+	lifecycleEvents.enable();
+	$('.my-element').on('attached', function(){});
+	$('.my-other-element').on('detached', function(){});
+
+	//Disable all lifecycle events
+	lifecycleEvents.disable();
 
 
-//Enable lifecycle events for the Node/NodeList passed
-lifecycle.enable(element);
-element.addEventListener('enteredView', function(){});
-element.addEventListener('attached', function(){});
+	//Enable lifecycle events for a Node/NodeList
+	lifecycleEvents.enable(element);
+	element.addEventListener('attached', function(){});
+	element.addEventListener('detached', function(){});
 
-
-//Enable only viewport events
-lifecycle.enableViewport('.item');
-
-
-//Enable only mutation events within the container '.feed' (container is optional)
-lifecycle.enableMutation('.item', '.feed');
-
-
-//Disable lifecycle events for the previously added selector
-lifecycle.disable('*');
-
-
-//Disable all lifecycle events
-lifecycle.disable();
+	//Disable lifecycle events for the previously added element/selector
+	lifecycleEvents.disable(element);
 ```
 
-### Customize callback names
+## API
 
-By default, Polymer’s event names are used for events.
-You can redefine event names via `lifecycle.defaults`:
+### lifecycleEvents.enable(selector)
 
-```js
-lifecycle.defaults.attachedCallbackName = 'appended';
-lifecycle.defaults.detachedCallbackName = 'removed';
-lifecycle.defaults.enteredViewCallbackName = 'appeared';
-lifecycle.defaults.leftViewCallbackName = 'disappeared';
-```
+Enable lifecycle events for an Element, NodeList or selector. If no selector specified, `'*'` is used.
+
+### lifecycleEvents.disable(selector)
+
+Disable lifecycle events for previously registered selector. If no selector specified, all lifecycle events are unbound.
+
+### lifecycleEvents.attachedCallbackName
+
+Callback name used for attaching lifecycle event. `attached` is used by default. Synomim: `DOMNodeInserted`.
+
+### lifecycleEvents.detachedCallbackName
+
+Callback name used for detaching lifecycle event. `detached` is used by default.Synomim: `DOMNodeRemoved`.
 
 
 [![NPM](https://nodei.co/npm/lifecycle-events.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/lifecycle-events/)

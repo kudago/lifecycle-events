@@ -2,11 +2,7 @@
 
 
 <!-- dev -->
-<!-- <script src="../node_modules/require-stub/index.js"></script> -->
-
-<!-- dist -->
-<script src="../dist/lifecycle.min.js"></script>
-
+<script src="../node_modules/require-stub/index.js"></script>
 
 <style>
 	body{
@@ -79,14 +75,6 @@
 
 <script>
 	var lc = window.lifecycle || require('..');
-
-	document.addEventListener('enteredView', function(e){
-		e.target.classList.add('entered');
-	});
-
-	document.addEventListener('leftView', function(e){
-		e.target.classList.remove('entered');
-	});
 
 	document.addEventListener('attached', function(e){
 		e.target.innerHTML = 'attached\n';

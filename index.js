@@ -4,7 +4,6 @@ var emit = require('emmy/emit');
 var off = require('emmy/off');
 var matches = require('matches-selector');
 var getElements = require('tiny-element');
-var intersects = require('intersects');
 
 
 var doc = document, win = window;
@@ -24,46 +23,14 @@ var doc = document, win = window;
  * @note  Multiple observations to an extent faster than one global observer:
  *        http://jsperf.com/mutation-observer-cases
  */
-var lifecycle = module.exports = enableLifecycleEventsFor;
-lifecycle.enable = enableLifecycleEventsFor;
-lifecycle.disable = disableLifecycleEventsFor;
-lifecycle.enableViewport = enableViewportEventsFor;
-lifecycle.disableViewport = disableViewportEventsFor;
-lifecycle.enableMutations = enableMutationEventsFor;
-lifecycle.disableMutations = disableMutationEventsFor;
+var lifecycle = module.exports = enable;
+lifecycle.enable = enable;
+lifecycle.disable = disable;
 
 
 /** Defaults can be changed outside */
-var defaults = lifecycle.defaults = {
-	attachedCallbackName: 'attached',
-	detachedCallbackName: 'detached',
-	enteredViewCallbackName: 'enteredView',
-	leftViewCallbackName: 'leftView'
-};
-
-
-/**
- * Lifecycle enabler
- * @main
- * @chainable
- */
-function enableLifecycleEventsFor(query, within){
-	enableViewportEventsFor(query);
-	enableMutationEventsFor(query, within);
-}
-
-
-/**
- * Lifecycle disabler
- */
-function disableLifecycleEventsFor(query){
-	disableViewportEventsFor(query);
-	disableMutationEventsFor(query);
-}
-
-
-
-/*  -------------------------  M  U  T  A  T  I  O  N  S  ---------------------------  */
+lifecycle.attachedCallbackName = 'attached';
+lifecycle.detachedCallbackName = 'detached';
 
 
 /** One observer to observe a lot of nodes  */
@@ -84,7 +51,9 @@ var attachedItemsSet = new WeakSet;
  * @param {(string|Node|NodeList|document)} query Target pointer
  * @param {Object} within Settings for observer
  */
-function enableMutationEventsFor(query, within){
+function enable(query, within) {
+	if (!query) query = '*';
+
 	within = getElements(within || doc);
 
 	//save cached version of target
@@ -104,7 +73,7 @@ function enableMutationEventsFor(query, within){
 /**
  * Stop observing items
  */
-function disableMutationEventsFor(target){
+function disable(target) {
 	var idx = mTargets.indexOf(target);
 	if (idx >= 0) {
 		mTargets.splice(idx,1);
@@ -115,8 +84,8 @@ function disableMutationEventsFor(target){
 /**
  * Handle a mutation passed
  */
-function mutationHandler(mutations){
-	mutations.forEach(function(mutation){
+function mutationHandler(mutations) {
+	mutations.forEach(function(mutation) {
 		checkAddedNodes(mutation.addedNodes);
 		checkRemovedNodes(mutation.removedNodes);
 	});
@@ -126,23 +95,22 @@ function mutationHandler(mutations){
 /**
  * Check nodes list to call attached
  */
-function checkAddedNodes(nodes){
+function checkAddedNodes(nodes) {
 	var newItems = false;
 
 	//find attached evt targets
-	for (var i = nodes.length; i--;){
+	for (var i = nodes.length; i--;) {
 		var node = nodes[i];
 		if (node.nodeType !== 1) continue;
 
 		//find options corresponding to the node
-		if (!attachedItemsSet.has(node)){
+		if (!attachedItemsSet.has(node)) {
 			if (isObservable(node)) {
 				if (!newItems) {
 					newItems = true;
-					checkViewport();
 				}
 				attachedItemsSet.add(node);
-				emit(node, defaults.attachedCallbackName, null, true);
+				emit(node, lifecycle.attachedCallbackName, null, true);
 			}
 		}
 	}
@@ -152,15 +120,15 @@ function checkAddedNodes(nodes){
 /**
  * Check nodes list to call detached
  */
-function checkRemovedNodes(nodes){
+function checkRemovedNodes(nodes) {
 	//handle detached evt
-	for (var i = nodes.length; i--;){
+	for (var i = nodes.length; i--;) {
 		var node = nodes[i];
 		if (node.nodeType !== 1) continue;
 
 		//find options corresponding to the node
-		if (attachedItemsSet.has(node)){
-			emit(node, defaults.detachedCallbackName, null, true);
+		if (attachedItemsSet.has(node)) {
+			emit(node, lifecycle.detachedCallbackName, null, true);
 			attachedItemsSet.delete(node);
 		}
 	}
@@ -174,103 +142,11 @@ function checkRemovedNodes(nodes){
  *
  * @return {bool} true, if node is found
  */
-function isObservable(node){
+function isObservable(node) {
 	//check queries
 	for (var i = mTargets.length, target; i--;) {
 		target = mTargets[i];
 		if (node === target) return true;
 		if (typeof target === 'string' && matches(node, target)) return true;
-	}
-}
-
-
-
-/*  ---------------------------  V  I  E  W  P  O  R  T  ----------------------------  */
-
-
-/**
- * List of observable viewport events targets/queries
- */
-var vpTargets = [];
-
-
-/** Set of entered viewport items */
-var enteredItemsSet = new WeakSet;
-
-
-/**
- * Observe targets
- */
-function enableViewportEventsFor(target){
-	vpTargets.push(target);
-	checkViewport();
-}
-
-
-/**
- * Remove targets from observation list
- */
-function disableViewportEventsFor(target){
-	var idx = vpTargets.indexOf(target);
-	if (idx >= 0) {
-		vpTargets.splice(idx,1);
-	}
-}
-
-
-/** viewport sizes */
-var vpRect = {
-	top:0,
-	left:0,
-	bottom: win.innerHeight,
-	right: win.innerWidth,
-	width: win.innerWidth,
-	height: win.innerHeight
-};
-
-
-/** keep viewport updated */
-on(win, 'resize', function(){
-	vpRect.bottom = win.innerHeight;
-	vpRect.right = win.innerWidth;
-	vpRect.width = win.innerWidth;
-	vpRect.height = win.innerHeight;
-});
-
-
-
-/** add scroll handler for the doc */
-on(doc, 'scroll', checkViewport);
-on(doc, 'DOMContentLoaded', checkViewport);
-
-
-
-/** check elements need to be entered/left */
-function checkViewport(){
-	for (var i = vpTargets.length; i--;){
-		var query = vpTargets[i];
-
-		var targets = getElements(query, true);
-
-		for (var j = targets.length; j--;){
-			var target = targets[j];
-			var targetRect = target.getBoundingClientRect();
-
-			//if item is entered - check to call entrance
-			if (enteredItemsSet.has(target)){
-				if (!intersects(targetRect, vpRect, {tolerance: 0})) {
-					enteredItemsSet.delete(target);
-					emit(target, defaults.leftViewCallbackName, null, true);
-				}
-			}
-
-			//check to call leave
-			else {
-				if (intersects(targetRect, vpRect, {tolerance: 0})) {
-					enteredItemsSet.add(target);
-					emit(target, defaults.enteredViewCallbackName, null, true);
-				}
-			}
-		}
 	}
 }

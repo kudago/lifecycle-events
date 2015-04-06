@@ -49,4 +49,7 @@ Callback name used for attaching lifecycle event. `attached` is used by default.
 Callback name used for detaching lifecycle event. `detached` is used by default.Synomim: `DOMNodeRemoved`.
 
 
+Also see [viewport-events](http://github.com/kudago/viewport-events) for `enteredView` and `leftView` events.
+
+
 [![NPM](https://nodei.co/npm/lifecycle-events.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/lifecycle-events/)

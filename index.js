@@ -4,6 +4,7 @@ var emit = require('emmy/emit');
 var off = require('emmy/off');
 var matches = require('matches-selector');
 var getElements = require('tiny-element');
+var contains = require('contains');
 
 
 var doc = document, win = window;
@@ -63,7 +64,7 @@ function enable(query, within) {
 	observer.observe(within, {subtree: true, childList: true});
 
 	//ignore not bound nodes
-	if (query instanceof Node && !doc.contains(query)) return;
+	if (query instanceof Node && !contains(doc, query)) return;
 
 	//check initial nodes
 	checkAddedNodes(getElements.call(within, query, true));
@@ -96,16 +97,18 @@ function mutationHandler(mutations) {
  * Check nodes list to call attached
  */
 function checkAddedNodes(nodes) {
-	var newItems = false;
+	var newItems = false, node;
 
 	//find attached evt targets
 	for (var i = nodes.length; i--;) {
-		var node = nodes[i];
+		node = nodes[i];
 		if (node.nodeType !== 1) continue;
 
 		//find options corresponding to the node
 		if (!attachedItemsSet.has(node)) {
-			if (isObservable(node)) {
+			node = getObservee(node);
+			//if observee found within attached items - add it to set
+			if (node) {
 				if (!newItems) {
 					newItems = true;
 				}
@@ -136,17 +139,18 @@ function checkRemovedNodes(nodes) {
 
 
 /**
- * Try to retrieve an options according to the target passed
+ * Check whether node is observing
  *
- * @param {Node} node An element to oppose options to
- *
- * @return {bool} true, if node is found
+ * @param {Node} node An element to check on inclusion to target list
  */
-function isObservable(node) {
+function getObservee(node) {
 	//check queries
 	for (var i = mTargets.length, target; i--;) {
 		target = mTargets[i];
-		if (node === target) return true;
-		if (typeof target === 'string' && matches(node, target)) return true;
+		if (node === target) return node;
+		if (typeof target === 'string' && matches(node, target)) return node;
+
+		//return innermost target
+		if (contains(node, target)) return target;
 	}
 }

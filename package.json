@@ -7,6 +7,7 @@
     "*.js"
   ],
   "dependencies": {
+    "contains": "^0.1.1",
     "emmy": ">=3.1.0",
     "intersects": "*",
     "matches-selector": "~1.0.0",

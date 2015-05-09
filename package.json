@@ -7,17 +7,15 @@
     "*.js"
   ],
   "dependencies": {
-    "contains": "^0.1.1",
     "emmy": ">=3.1.0",
-    "intersects": "*",
-    "matches-selector": "~1.0.0",
-    "mutation-observer": "0.0.1",
     "tiny-element": "*"
   },
-  "devDependencies": {
-    "require-stub": "^2.2.4"
+  "scripts": {
+    "watch": "watchify -r ./index.js:../ -o ./bundle.js"
   },
-  "scripts": {},
+  "devDependencies": {
+    "watchify": "^3.2.1"
+  },
   "keywords": [
     "lifecycle",
     "DOM",

@@ -30,6 +30,9 @@ Enable lifecycle events for HTML elements: `attached`, `detached`.
 	lifecycleEvents.disable(element);
 ```
 
+To make it work in IE and old browsers, you may need to polyfill `MutationObserver`, `WeakMap`, `WeakSet`, `Element.matches`, `Element.contains`: [//cdn.polyfill.io/v1/polyfill.min.js?features=default,WeakMap,WeakSet]().
+
+
 ## API
 
 ### lifecycleEvents.enable(selector, [container])

@@ -1,10 +1,7 @@
-var MO = require('mutation-observer');
 var on = require('emmy/on');
 var emit = require('emmy/emit');
 var off = require('emmy/off');
-var matches = require('matches-selector');
 var getElements = require('tiny-element');
-var contains = require('contains');
 
 
 var doc = document, win = window;
@@ -35,6 +32,8 @@ lifecycle.detachedCallbackName = 'detached';
 
 
 /** One observer to observe a lot of nodes  */
+var MO = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+
 var observer = new MO(mutationHandler);
 
 
@@ -64,7 +63,7 @@ function enable(query, within) {
 	observer.observe(within, {subtree: true, childList: true});
 
 	//ignore not bound nodes
-	if (query instanceof Node && !contains(doc, query)) return;
+	if (query instanceof Node && !doc.contains(query)) return;
 
 	//check initial nodes
 	checkAddedNodes(getElements.call(within, query, true));
@@ -148,9 +147,9 @@ function getObservee(node) {
 	for (var i = mTargets.length, target; i--;) {
 		target = mTargets[i];
 		if (node === target) return node;
-		if (typeof target === 'string' && matches(node, target)) return node;
+		if (typeof target === 'string' && node.matches(target)) return node;
 
 		//return innermost target
-		if (contains(node, target)) return target;
+		if (node.contains(target)) return target;
 	}
 }

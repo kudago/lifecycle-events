@@ -1,8 +1,7 @@
 <!doctype html>
 
-
-<!-- dev -->
-<script src="../node_modules/require-stub/index.js"></script>
+<script type="text/javascript" src="http://cdn.polyfill.io/v1/polyfill.min.js?features=default,WeakMap,WeakSet"></script>
+<script type="text/javascript" src="../bundle.js"></script>
 
 <style>
 	body{
@@ -40,6 +39,8 @@
 </style>
 
 
+
+
 <button class="add">Add 10 items</button>
 
 
@@ -74,7 +75,7 @@
 
 
 <script>
-	var lc = window.lifecycle || require('..');
+	var lc = require('../');
 
 	document.addEventListener('attached', function(e){
 		e.target.innerHTML = 'attached\n';

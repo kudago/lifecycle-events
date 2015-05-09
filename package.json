@@ -1,6 +1,6 @@
 {
   "name": "lifecycle-events",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Enable lifecycle events for DOM-elements: attached, detached",
   "main": "index.js",
   "files": [
